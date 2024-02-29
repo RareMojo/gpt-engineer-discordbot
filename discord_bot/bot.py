@@ -17,9 +17,10 @@ OWNER_ID = os.getenv("OWNER_ID")
 GUILD_ID = os.getenv("DISCORD_GUILD_ID")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL")
-PINECONE_API_KEY = os.environ.get("PINECONE_API_KEY")
-PINECONE_ENV = os.environ.get("PINECONE_ENV")
-PINECONE_INDEX = os.environ.get("PINECONE_INDEX")
+PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+PINECONE_ENV = os.getenv("PINECONE_ENV")
+PINECONE_INDEX = os.getenv("PINECONE_INDEX")
+GOOGLE_SEARCH_API_KEY = os.getenv("GOOGLE_SEARCH_API_KEY")
 
 
 if TYPE_CHECKING:
@@ -46,6 +47,7 @@ class Bot(commands.Bot):
           Sets the bot's logger, paths, config file, avatar file, cogs directory, guild ID, owner ID, chatbot category ID, chatbot threads ID, Discord token, OpenAI API key, OpenAI model, Pinecone API key, Pinecone environment, and Pinecone index.
           Loads the config file.
           Sets the bot's display name.
+          Sets self.running to True.
         Examples:
           >>> bot = Bot(intents, paths, logger)
           Bot built.
@@ -67,11 +69,14 @@ class Bot(commands.Bot):
         self.pinecone_api_key = str(PINECONE_API_KEY)
         self.pinecone_env = str(PINECONE_ENV)
         self.pinecone_index = str(PINECONE_INDEX)
-
+        self.google_search_api_key = str(GOOGLE_SEARCH_API_KEY)
+        
         with open(self.config_file, "r") as f:
             self.config = json.load(f)
 
+        self.default_db_id = self.config.get("default_db_id")
         self.display_name = self.config.get("bot_name")
+        self.show_source_documents = self.config.get("show_source_documents")
 
         super().__init__(command_prefix=self.config.get("prefix"), intents=intents)
         self.log.debug("Bot initialized.")
@@ -118,28 +123,34 @@ class Bot(commands.Bot):
     async def load_cogs(self):
         """Loads all cogs in the cogs directory and its subdirectories."""
         self.log.debug("Loading cogs...")
-        total_loaded_extensions = 0
-        cog_name = None
+        num_loaded_cogs = 0
         try:
             for dirpath, dirnames, filenames in os.walk(self.cogs_dir):
                 loaded_extensions = []
+                cog_name = None
+                
                 for filename in filenames:
+                    
                     if filename.endswith("cog.py"):
                         rel_path = os.path.relpath(dirpath, self.cogs_dir)
+                        
                         if rel_path == '.':
                             cog_name = f"cogs.{filename[:-3]}"
                         else:
                             cog_name = f"cogs.{rel_path.replace(os.sep, '.')}.{filename[:-3]}"
+                            
                         if cog_name in self.extensions:
                             continue
+                        
                         await self.load_extension(cog_name)
                         loaded_extensions.append(filename[:-3])
-                        total_loaded_extensions += 1
+                        num_loaded_cogs += 1
+                        
                 if loaded_extensions:
                     package_name = "Standalone Cogs" if dirpath == self.cogs_dir else os.path.basename(dirpath)
                     self.log.info("Loaded:")
                     self.log.info(f"Package Name: {package_name}")
                     self.log.info(f"Extensions: {', '.join(loaded_extensions)}")
         except Exception as e:
-            raise e
-        self.log.info(f"Loaded total {total_loaded_extensions} cogs.")
+            self.log.error(f"Failed to load extension: {e}")
+        self.log.info(f"Loaded total {num_loaded_cogs} cogs.")

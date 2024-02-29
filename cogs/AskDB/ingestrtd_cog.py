@@ -6,11 +6,9 @@ from typing import TYPE_CHECKING
 import discord
 from discord.ext import commands
 
-from utils.ingest import ingest
+from utils.ingest import ingestRTD
 from utils.mongo_db import MongoDBHandler
 from discord_bot.logger import log_debug, log_error, log_info
-
-from urllib.parse import urlparse
 
 if TYPE_CHECKING:
     from discord_bot.bot import Bot
@@ -23,7 +21,7 @@ sys.path.append("../")
 handler = MongoDBHandler("askdb")
 
 
-class IngestDBCog(commands.Cog):
+class IngestRTDCog(commands.Cog):
     """
     Cog for ingesting URLs.
     """
@@ -37,7 +35,7 @@ class IngestDBCog(commands.Cog):
         self.bot = bot
 
     @commands.hybrid_command()
-    async def ingestdb(self, ctx: commands.Context, url: str, db_name: str):
+    async def ingestrtd(self, ctx: commands.Context, url: str, db_name: str):
         """
         Ingests a URL.
         Args:
@@ -62,10 +60,6 @@ class IngestDBCog(commands.Cog):
             await ctx.send(embed=discord.Embed(title="Error", color=embed_color_failure, description="Please use this command in the 'AI' text-chat category."), ephemeral=True)
             return
 
-        parsed_url = urlparse(url)
-        if not parsed_url.netloc.endswith('readthedocs.io'):
-            await ctx.send(embed=discord.Embed(title="Error", color=embed_color_failure, description="The URL you provided is not a ReadTheDocs URL."), ephemeral=True)
-            return
         await ctx.defer(ephemeral=True)
         try:
             try:
@@ -80,7 +74,7 @@ class IngestDBCog(commands.Cog):
                 log_debug(
                     self.bot, f"Ingesting {url} as {db_name} for {ctx.author.name}"
                 )
-                await ingest(self.bot, url=url, namespace=random_uuid)
+                await ingestRTD(self.bot, url=url, namespace=random_uuid)
                 current_time = datetime.now()
                 handler.handle_data(
                     user_id=str(ctx.author.id),
@@ -121,7 +115,7 @@ class IngestDBCog(commands.Cog):
 async def setup(bot: "Bot") -> None:
     """Loads the cog."""
     try:
-        await bot.add_cog(IngestDBCog(bot))
-        log_debug(bot, "IngestDBCog loaded.")
+        await bot.add_cog(IngestRTDCog(bot))
+        log_debug(bot, "IngestRTDCog loaded.")
     except Exception as e:
-        log_error(bot, f"Error loading IngestDBCog: {e}")
+        log_error(bot, f"Error loading IngestRTDCog: {e}")

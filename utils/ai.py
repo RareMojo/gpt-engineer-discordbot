@@ -40,8 +40,7 @@ class ChatAgent:
         self.bot = bot
         client = self.bot.openai_api_key
         model = self.bot.openai_model
-        self.channel_id = channel_id
-
+        
         with open(self.bot.paths["configs"] / "preprompt", "r") as f:
             preprompt = f.read()
 
@@ -56,11 +55,11 @@ class ChatAgent:
         )
 
         self.llm = ChatOpenAI(client=client, model=str(model), temperature=temperature)
-        memory = ConversationBufferWindowMemory(
+        self.memory = ConversationBufferWindowMemory(
             k=3, memory_key=channel_id, return_messages=return_messages
         )
         self.conversation = ConversationChain(
-            memory=memory, prompt=self.prompt, llm=self.llm, verbose=True
+            memory=self.memory, prompt=self.prompt, llm=self.llm, verbose=True
         )
 
     def predict(self, prompt: str):

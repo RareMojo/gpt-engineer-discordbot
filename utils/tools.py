@@ -1,59 +1,16 @@
 import json
+import os
 import re
 import traceback
 from typing import TYPE_CHECKING
 
+import aiohttp
 import discord
+
+from discord_bot.logger import log_debug, log_error
 
 if TYPE_CHECKING:
     from discord_bot.bot import Bot
-
-
-async def welcome_to_bot(bot: "Bot") -> None:
-    """
-    Prints bot instance details and a welcome message.
-    Args:
-      bot (Bot): The bot instance.
-    Returns:
-      None
-    Examples:
-      >>> welcome_to_bot(bot)
-      Bot Instance Details:
-      Display name: BotName
-      Presence: Playing a game
-      Linked with Guild | ID: 123456789
-      Bot is online and ready.
-      Welcome to BotName!
-      Be sure to check out the documentation at the GitHub repository.
-      Type 'help' for a list of terminal commands.
-    """
-    bot_name = bot.config.get("bot_name")
-    presence = bot.config.get("presence")
-    owner_name = bot.config.get("owner_name")
-
-    try:
-        bot.log.debug("Starting welcome_to_bot function...")
-        bot.log.info("Bot Instance Details:")
-        bot.log.info(f"Display name: {bot_name}")
-        bot.log.info(f"Presence: {presence}")
-
-        for guild in bot.guilds:
-            bot.log.info(f"Linked with {guild} | ID: {guild.id}")
-
-        bot.log.info("Bot is online and ready.")
-
-        if bot.config.get("update_bot") == False:
-            bot.log.info(f"Welcome back to {bot_name}, {owner_name}!")
-            bot.log.info("Type 'help' for a list of terminal commands.")
-        else:
-            bot.log.info(f"Welcome to {bot_name}!")
-            bot.log.info(
-                "Be sure to check out the documentation at the GitHub repository."
-            )
-            bot.log.info("Type 'help' for a list of terminal commands.")
-
-    except Exception as e:
-        bot.log.error(f"Error in welcome_to_bot function: {e}")
 
 
 def get_new_config():
@@ -81,6 +38,8 @@ def get_new_config():
         "bot_name": input("Bot Name: "),
         "presence": input("Presence: "),
         "persona": input("Persona: "),
+        "show_source_documents": True,
+        "default_db_id": "UNDEFINED",
         "log_level": "INFO",
         "update_bot": True,
     }
@@ -329,3 +288,26 @@ def split_chat(chat, max_chars=2000):
     add_chunk(chunk)
 
     return chunks
+
+async def download_file(bot: "Bot", session: aiohttp.ClientSession, url: str, output_directory: str):
+    """
+    Downloads a file from a given URL.
+    Args:
+      bot (Bot): The bot instance.
+      session (aiohttp.ClientSession): The aiohttp session.
+      url (str): The URL of the file to download.
+      output_directory (str): The directory to save the file to.
+    Side Effects:
+      Writes the file to the output directory.
+    Examples:
+      >>> download_file(bot, session, 'https://example.com/file.txt', '/tmp/')
+    """
+    async with session.get(url) as response:
+        if response.status == 200:
+            file_name = os.path.join(output_directory, os.path.basename(url))
+            file_content = await response.read()
+            with open(file_name, "wb") as file:
+                file.write(file_content)
+            log_debug(bot, f"Downloaded: {url}")
+        else:
+            log_error(bot, f"Failed to download: {url}")

@@ -260,7 +260,7 @@ async def set_bot_presence(bot: "Bot") -> None:
                 return bot.log.warning("Failed to set update flag.")
 
             try:
-                await bot.change_presence(activity=discord.Game(name=new_presence))
+                await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=new_presence))
                 bot.log.info(
                     "Config change, presence: {} -> {}".format(
                         config.get("presence"), new_presence
@@ -437,6 +437,8 @@ def show_help(bot: "Bot") -> None:
         "wipebot": 'Wipes the bot"s configuration files.',
         "aliases": "Lists all command aliases.",
         "debug": "Toggles debug mode.",
+        "setdb": "Sets the default DB ID for AskDB.",
+        "showsource": "Toggles showing source documents.",
     }
 
     try:
@@ -496,6 +498,8 @@ def show_aliases(bot: "Bot") -> None:
         "wipebot": ["wipeconfig", "wipe", "wb"],
         "alias": ["aliases", "a"],
         "debug": ["d"],
+        "setdb": ["defaultdb", "dbd", "dbid"],
+        "showsource": ["showsrc", "src"],
     }
 
     try:
@@ -536,3 +540,59 @@ def ping(bot: "Bot") -> None:
         bot.log.info("Pong!")
     except Exception as e:
         bot.log.error(f"Error in ping function: {e}")
+        
+
+def set_default_db_id(bot: "Bot") -> None:
+    """
+    Sets the default DB ID for AskDB.
+
+    Args:
+        bot (Bot): The bot instance.
+    """
+    
+    config_file = bot.config_file
+
+    with open(config_file, "r") as f:
+        config = json.load(f)
+
+    bot.log.info("Current default DB ID: {}".format(bot.default_db_id))
+    change_default_db_id = get_boolean_input(bot, "Would you like to change the default DB ID? (y/n) ")
+            
+    try:
+        if change_default_db_id == True:
+            new_db_id = input("Enter new default DB ID: ")
+            bot.default_db_id = new_db_id
+            new_data = {"default_db_id": new_db_id}
+            update_config(config, new_data)
+            bot.log.info("Default DB ID changed.")
+            
+        else:
+            bot.log.info("Default DB ID not changed.")
+    except Exception as e:
+        bot.log.error(f"Error in set_default_db_id function: {e}")
+        
+        
+def toggle_show_source_documents(bot: "Bot") -> None:
+    """
+    Toggle whether or not to show source documents.
+    
+    Args:
+        bot (Bot): The bot instance.
+    """
+    
+    config_file = bot.config_file
+
+    bot.log.info("Current show source documents: {}".format(bot.show_source_documents))
+    change_show_source_documents = get_boolean_input(bot, "Would you like to toggle show source documents? (y/n) ")
+    
+    try:
+        if change_show_source_documents == True:
+            bot.show_source_documents = not bot.show_source_documents
+            new_data = {"show_source_documents": bot.show_source_documents}
+            update_config(config_file, new_data)
+            bot.log.info("Show source documents changed.")
+            
+        else:
+            bot.log.info("Show source documents not changed.")
+    except Exception as e:
+        bot.log.error(f"Error in toggle_show_source_documents function: {e}")

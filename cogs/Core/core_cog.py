@@ -1,5 +1,6 @@
 from discord.ext import commands
-from utils.tools import update_with_discord, welcome_to_bot
+from utils.tools import update_with_discord
+from discord_bot.terminal import welcome_to_bot
 from discord_bot.logger import log_debug, log_error, log_info
 
 from typing import TYPE_CHECKING

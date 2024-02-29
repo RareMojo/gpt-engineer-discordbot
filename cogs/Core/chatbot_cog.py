@@ -120,6 +120,7 @@ class ChatbotCog(
                                 )
 
                             chat_agent = chat_agents[self.channel_id]
+                            log_debug(self.bot, f"Prompt: {prompt}, User: {user}, Channel: {channel}")
                             messages = chat_agent.predict(prompt)
 
                             if not messages:

@@ -3,13 +3,61 @@ from typing import TYPE_CHECKING
 
 from discord_bot.terminal_cmds import (exit_bot_terminal, ping, set_bot_avatar,
                                        set_bot_name, set_bot_presence,
-                                       set_owner, set_persona, show_aliases,
-                                       show_help, sync_commands,
-                                       toggle_debug_mode, wipe_config)
+                                       set_default_db_id, set_owner,
+                                       set_persona, show_aliases, show_help,
+                                       sync_commands, toggle_debug_mode,
+                                       wipe_config, toggle_show_source_documents)
 
 if TYPE_CHECKING:
     from discord_bot.bot import Bot
 
+
+async def welcome_to_bot(bot: "Bot") -> None:
+    """
+    Prints bot instance details and a welcome message.
+    Args:
+      bot (Bot): The bot instance.
+    Returns:
+      None
+    Examples:
+      >>> welcome_to_bot(bot)
+      Bot Instance Details:
+      Display name: BotName
+      Presence: Playing a game
+      Linked with Guild | ID: 123456789
+      Bot is online and ready.
+      Welcome to BotName!
+      Be sure to check out the documentation at the GitHub repository.
+      Type 'help' for a list of terminal commands.
+    """
+    bot_name = bot.config.get("bot_name")
+    presence = bot.config.get("presence")
+    owner_name = bot.config.get("owner_name")
+
+    try:
+        bot.log.debug("Starting welcome_to_bot function...")
+        bot.log.info("Bot Instance Details:")
+        bot.log.info(f"Display name: {bot_name}")
+        bot.log.info(f"Presence: {presence}")
+
+        for guild in bot.guilds:
+            bot.log.info(f"Linked with {guild} | ID: {guild.id}")
+
+        bot.log.info("Bot is online and ready.")
+
+        if bot.config.get("update_bot") == False:
+            bot.log.info(f"Welcome back to {bot_name}, {owner_name}!")
+            bot.log.info("Type 'help' for a list of terminal commands.")
+        else:
+            bot.log.info(f"Welcome to {bot_name}!")
+            bot.log.info(
+                "Be sure to check out the documentation at the GitHub repository."
+            )
+            bot.log.info("Type 'help' for a list of terminal commands.")
+
+    except Exception as e:
+        bot.log.error(f"Error in welcome_to_bot function: {e}")
+        
 
 async def terminal_command_loop(bot: "Bot"):
     """
@@ -124,6 +172,14 @@ class TerminalCommands:
         elif user_command in ["debug", "d"]:
             self.bot.log.debug("Toggling debug mode...")
             toggle_debug_mode(self.bot)
+            
+        elif user_command in ["setdb", "defaultdb", "dbd", "dbid"]:
+            self.bot.log.debug("Setting default DB ID...")
+            set_default_db_id(self.bot)
+            
+        elif user_command in ["showsource", "showsrc", "src"]:
+            self.bot.log.debug("Toggling show source documents...")
+            toggle_show_source_documents(self.bot)
 
         else:
             self.bot.log.info(f"{user_command} is not a recognized command.")
